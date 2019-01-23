@@ -12,4 +12,12 @@ int getCost(int cardNumber);
 int cardEffect(int card, int choice1, int choice2, int choice3, 
 	       struct gameState *state, int handPos, int *bonus);
 
+// individual card effects
+int playAdventurer(struct gameState * state);
+int playSmithy(struct gameState * state, int handPos);
+int playVillage(struct gameState * state, int handPos);
+int playCutpurse(struct gameState * state, int handPos);
+int playEmbargo(struct gameState * state, int handPos, int choice1);
+
+
 #endif
