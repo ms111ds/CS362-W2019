@@ -14,6 +14,7 @@
 
 /*************************************************************
  * variables critical to smithy
+ * Do not Change!
  ************************************************************/
 int maxNumPlayers = 4;              // max numPlayers
 int minNumPlayers = 2;              // min numPlayers
@@ -39,6 +40,11 @@ int randomizeAndInsert(struct gameState * state)
     int i;
     int card = smithy;
     int handPos;
+    int handWeight;
+    int deckWeight;
+    int discardWeight;
+    int totalWeight;
+    int totalCards;
 
     // randomize game state
     for (i = 0; i < sizeof(struct gameState); i++)
@@ -49,9 +55,14 @@ int randomizeAndInsert(struct gameState * state)
     state->whoseTurn = rand() % state->numPlayers;
     for (i = 0; i < state->numPlayers; i++)
     {
-        state->handCount[i] = minHandCount + rand() % (maxHandCount - minHandCount + 1);
-        state->deckCount[i] = minDeckCount + rand() % (maxDeckCount - minDeckCount + 1);
-        state->discardCount[i] = minDiscardCount + rand() % (maxDiscardCount - minDiscardCount + 1);
+        handWeight = rand() % 500;
+        deckWeight = rand() % 500;
+        discardWeight = rand() % 500;
+        totalWeight = handWeight + deckWeight + discardWeight;
+        totalCards = rand() % 501;
+        state->handCount[i] = totalCards * handWeight/totalWeight;
+        state->deckCount[i] = totalCards * deckWeight/totalWeight;
+        state->discardCount[i] = totalCards - state->handCount[i] - state->deckCount[i];
     }
     state->playedCardCount = minPlayedCardCount + rand() % (maxPlayedCardCount - minPlayedCardCount + 1);
 

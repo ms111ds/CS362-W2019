@@ -14,6 +14,7 @@
 
 /*************************************************************
  * variables critical to adventurer 
+ * Do not change!
  ************************************************************/
 int maxNumPlayers = 4;              // max numPlayers
 int minNumPlayers = 2;              // min numPlayers
@@ -37,8 +38,17 @@ int minPlayedCardCount = 0;         // min playedCardCount
 int randomizeAndInsert(struct gameState * state)
 {
     int i;
-    int card = smithy;
+    int numTreasure;
+    int curTreasure;
+    int deckAndDiscardSize;
+    int treasureIndex;
+    int card = adventurer;
     int handPos;
+    int handWeight;
+    int deckWeight;
+    int discardWeight;
+    int totalWeight;
+    int totalCards;
 
     // randomize game state
     for (i = 0; i < sizeof(struct gameState); i++)
@@ -49,11 +59,34 @@ int randomizeAndInsert(struct gameState * state)
     state->whoseTurn = rand() % state->numPlayers;
     for (i = 0; i < state->numPlayers; i++)
     {
-        state->handCount[i] = minHandCount + rand() % (maxHandCount - minHandCount + 1);
-        state->deckCount[i] = minDeckCount + rand() % (maxDeckCount - minDeckCount + 1);
-        state->discardCount[i] = minDiscardCount + rand() % (maxDiscardCount - minDiscardCount + 1);
+        handWeight = rand() % maxHandCount;
+        deckWeight = rand() % maxDeckCount;
+        discardWeight = rand() % maxDiscardCount;
+        totalWeight = handWeight + deckWeight + discardWeight;
+        totalCards = rand() % 501;
+        state->handCount[i] = totalCards * handWeight/totalWeight;
+        state->deckCount[i] = totalCards * deckWeight/totalWeight;
+        state->discardCount[i] = totalCards - state->handCount[i] - state->deckCount[i];
     }
     state->playedCardCount = minPlayedCardCount + rand() % (maxPlayedCardCount - minPlayedCardCount + 1);
+
+    // insert anywhere from 0 to 10 treasure cards into either the deck or discard
+    numTreasure = rand() % 11;
+    for (i = 0; i < numTreasure; i++)
+    {
+        curTreasure = copper + rand() % 3; 
+        deckAndDiscardSize = state->deckCount[state->whoseTurn] + state->discardCount[state->whoseTurn];
+        if (deckAndDiscardSize == 0)
+            break;
+        treasureIndex = rand() % deckAndDiscardSize;
+        if (deckAndDiscardSize < state->deckCount[state->whoseTurn])
+            state->deck[state->whoseTurn][treasureIndex] = curTreasure;
+        else 
+        {
+            treasureIndex -= state->deckCount[state->whoseTurn];
+            state->discard[state->whoseTurn][treasureIndex] = curTreasure;
+        }
+    }
 
     // insert card into the player's hand and return the card's
     // position in the hand
@@ -61,98 +94,153 @@ int randomizeAndInsert(struct gameState * state)
         state->handCount[state->whoseTurn] = 1;
     handPos = rand() % state->handCount[state->whoseTurn];
     state->hand[state->whoseTurn][handPos] = card;
+
     return handPos;
 }        
+
+
+/****************************************************************
+ * min 
+ * Description: returns the smaller of two integers
+ ***************************************************************/
+int min(int int1, int int2)
+{
+    int minimum;
+
+    if (int1 < int2)
+        minimum = int1;
+    else
+        minimum = int2;
+    return minimum;
+}
+
+
+/****************************************************************
+ * addToDiscardArray 
+ * Description: adds next card in deck to the discard array
+ ***************************************************************/
+int addToDiscardArray(struct gameState * state, int (* discardArray)[], int * arrSize)
+{
+    int curPlayer = state->whoseTurn;
+    int maxAllowable = 500;
+
+    if (*arrSize >= maxAllowable)
+    {
+        printf("addToDiscardArray: adding more cards than max allowable of %i\n", maxAllowable);
+        return -1;
+    } 
+
+    (*discardArray)[*arrSize] = state->deck[curPlayer][state->deckCount[curPlayer] - 1];
+    state->deckCount[curPlayer]--;
+    (*arrSize)++;
+
+    return 0;
+}
+
 
 /****************************************************************
  * createExpectedState
  * Description: fill out the information for the expected game
  *      state.
  ***************************************************************/
-void createExpectedState(struct gameState * expectedState, struct gameState * postState, int handPos)
+void createExpectedState(struct gameState * expectedState, struct gameState * postState)
 {
     int i;
+    int j = 0;
     int treasureFound = 0;
-    int noCards = 0;
+    int toDiscard[1000];
+    int numToDiscard = 0;
+    int curCard;
     int deckSwitch = 0; // determines if the discard has been shuffled into the deck
     int curPlayer = expectedState->whoseTurn;
-    int replaceIndex;
+    int handSize;
 
-    while (treasureFound < 2 && noCards == 0)
-    {
-        
-        if (expectedState->deckCount[curPlayer] > 0 && deckSwitch == 0)
-        {
-            // check if max hand size reached 
-            if (expectedState->handCount[curPlayer] >= maxHandCount)
-            {
-                printf("createExpectedState: adding card beyond max\n");
-                break;
-            }
+    printf("entered createExpectedState\n");
 
-            // update hand with card from deck
-            expectedState->hand[curPlayer][expectedState->handCount[curPlayer]]
-                = expectedState->deck[curPlayer][expectedState->deckCount[curPlayer] - 1]; 
-            // update hand and deck counts
-            expectedState->handCount[curPlayer]++;
-            expectedState->deckCount[curPlayer]--;
-        }
+    // while (treasureFound < 2 && deckSwitch == 0 && j < 500)
+    // {
 
-        else if(expectedState->discardCount[curPlayer] > 0 || (expectedState->deckCount[curPlayer] > 0 && deckSwitch == 1))
-        {
-            // shuffle discard into deck
-            if (deckSwitch == 0)
-            {
-                // copy over shuffled deck from post state
-                memcpy(expectedState->deck[curPlayer], postState->deck[curPlayer], sizeof(int) * expectedState->discardCount[curPlayer]);
-                // copy over discard pile from post state
-                memcpy(expectedState->discard[curPlayer], postState->discard[curPlayer], sizeof(int) * expectedState->discardCount[curPlayer]);
-                // update the deck count, discard count 
-                expectedState->deckCount[curPlayer] = expectedState->discardCount[curPlayer]; 
-                expectedState->discardCount[curPlayer] = 0;
-                // update the card in smithy's hand position, the deck count, and set the deck switch
-                expectedState->hand[curPlayer][handPos] = postState->hand[curPlayer][handPos];
-                expectedState->deckCount[curPlayer]--;
-                deckSwitch = 1;
-            }
-            else
-            {
+    //     if (expectedState->discardCount[curPlayer] == 0 && expectedState->deckCount[curPlayer] == 0)
+    //         deckSwitch = 1;
+    //     // //printf("passed discard and expected = 0\n");
+    //     // else if (expectedState->deckCount[curPlayer] > 0)
+    //     // {
+    //     //     curCard = expectedState->deck[curPlayer][expectedState->deckCount[curPlayer] - 1];
+    //     //     //trasure card found
+    //     //     if (curCard == copper || curCard == silver || curCard == gold)
+    //     //     {
+    //     //         // check if max hand size reached 
+    //     //         if (expectedState->handCount[curPlayer] >= maxHandCount)
+    //     //         {
+    //     //             printf("createExpectedState: adding card beyond max to hand\n");
+    //     //             break;
+    //     //         }
 
-                // check if max hand size reached
-                if (expectedState->handCount[curPlayer] >= maxHandCount)
-                {
-                    printf("createExpectedState: adding card beyond max\n");
-                    break;
-                }
+    //     //         // update hand with card from deck
+    //     //         expectedState->hand[curPlayer][expectedState->handCount[curPlayer]] = curCard; 
+    //     //         // update hand and deck counts. Then increase the number of treasures found
+    //     //         expectedState->handCount[curPlayer]++;
+    //     //         expectedState->deckCount[curPlayer]--;
+    //     //         treasureFound++;
+    //     //     }
+    //     //     // treasure card not found
+    //     //     else
+    //     //     {
+    //     //         if (addToDiscardArray(expectedState, &toDiscard, &numToDiscard) != 0)
+    //     //             return;
+    //     //     }
+    //     // }
+    //     //printf("passed no shuffle\n");
 
-                // update hand with corresponding card from post function deck
-                if (postState->handCount[curPlayer] < 3)
-                    replaceIndex = i;
-                else
-                    replaceIndex = postState->handCount[curPlayer] - 3 + i;
-                expectedState->hand[curPlayer][expectedState->handCount[curPlayer]]
-                    = postState->hand[curPlayer][replaceIndex];
-                // update hand and deck counts
-                expectedState->handCount[curPlayer]++;
-                expectedState->deckCount[curPlayer]--;
-            }
-        }
-    }
+    //     // else if(expectedState->discardCount[curPlayer] > 0)
+    //     // {
+    //     //     // shuffle discard into deck
+    //     //     
+    //     //     // copy over shuffled deck from post state
+    //     //     memcpy(expectedState->deck[curPlayer], postState->deck[curPlayer], sizeof(int) * expectedState->discardCount[curPlayer]);
+    //     //     // copy over discard pile from post state
+    //     //     memcpy(expectedState->discard[curPlayer], postState->discard[curPlayer], sizeof(int) * maxDiscardCount);
+    //     //     // update the deck count, discard count 
+    //     //     expectedState->deckCount[curPlayer] = postState->deckCount[curPlayer]; 
+    //     //     expectedState->discardCount[curPlayer] = postState->discardCount[curPlayer];
+    //     //     // get hand size 
+    //     //     handSize = min(postState->handCount[curPlayer], expectedState->handCount[curPlayer] + 2);
+    //     //     handSize = min(handSize, maxHandCount);
+    //     //     // update hand with treasure cards 
+    //     //     while (expectedState->handCount[curPlayer] < handSize)
+    //     //     {
+    //     //         // check if max hand size reached
+    //     //         if (expectedState->handCount[curPlayer] >= maxHandCount)
+    //     //         {
+    //     //             printf("createExpectedState: adding card beyond max to hand\n");
+    //     //             break;
+    //     //         }
+    //     //         expectedState->hand[curPlayer][expectedState->handCount[curPlayer]] =
+    //     //             postState->hand[curPlayer][expectedState->handCount[curPlayer]];
+    //     //         expectedState->handCount[curPlayer]++;
+    //     //     }
+    //     //     // set the deck Switch
+    //     //     deckSwitch = 1;
+    //     // }
+    //     j++;
+    // }
 
-    // remove smithy from hand if not done already (discard not reshuffled into deck)
-    if (deckSwitch == 0)
-    {
-        expectedState->hand[curPlayer][handPos] = expectedState->hand[curPlayer][expectedState->handCount[curPlayer] - 1];
-        expectedState->hand[curPlayer][expectedState->handCount[curPlayer] - 1] = -1;
-        expectedState->handCount[curPlayer]--;
-    }
-    // if the discard was reshuffled into the deck the last card would have been moved
-    // to the place where smithy was. It's previous place needs to be set equal to -1
-    else
-        expectedState->hand[curPlayer][expectedState->handCount[curPlayer]] = -1;
+    // // and add cards in discard array to discard pile
+    // if (deckSwitch == 0)
+    // {
+    //     for (i = numToDiscard - 1; i >= 0; i--)
+    //     {
+    //         // check if max discard size reached
+    //         if (expectedState->discardCount[curPlayer] >= maxDiscardCount)
+    //         {
+    //             printf("createExpectedState: adding card beyond max to discard pile\n");
+    //             break;
+    //         }
+    //         expectedState->discard[curPlayer][expectedState->discardCount[curPlayer]] = toDiscard[i];
+    //         expectedState->discardCount[curPlayer]++;    
+    //     }
+    // }
 
-    expectedState->playedCards[expectedState->playedCardCount] = smithy;
-    expectedState->playedCardCount++;
 
     return;
 }
@@ -254,16 +342,17 @@ int main(int argc, char * argv[])
 
     for (i = 0; i < iterations; i++)
     {
-        // printf("%i: ", i);
+        printf("%i: ", i);
         cardPos = randomizeAndInsert(&originalState);
+        printf("cardPos complete, ");
         memcpy(&expectedState, &originalState, sizeof(struct gameState));
         memcpy(&postState, &originalState, sizeof(struct gameState)); 
-        // printf("new card made, ");
-        cardEffect(smithy, 0, 0, 0, &postState, cardPos, &bonus);
-        // printf("smithy run, ");
-        createExpectedState(&expectedState, &postState, cardPos);
+        printf("new card made, ");
+        cardEffect(adventurer, 0, 0, 0, &postState, cardPos, &bonus);
+        printf("adventurer run, ");
+        // createExpectedState(&expectedState, &postState);
         // printf("expected state obtained, ");
-        bugsFound += stateOracle(&originalState, &expectedState, &postState);
+        // bugsFound += stateOracle(&originalState, &expectedState, &postState);
         // printf("oracle run\n");
     }
 
