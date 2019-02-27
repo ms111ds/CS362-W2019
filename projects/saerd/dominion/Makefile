@@ -60,7 +60,7 @@ randomTestsAll: randomTest1 randomTest2 randomTest3
 	echo >> randomtestcard2.out
 	cat dominion.c.gcov >> randomtestcard2.out
 	
-	echo "---------- test results ----------" > randomtestcard2.out
+	echo "---------- test results ----------" > randomtestcard3.out
 	./randomTest3 5 >> randomtestcard3.out 2>&1
 	echo >> randomtestcard3.out
 	echo "---------- gcov results ----------" >> randomtestcard3.out
