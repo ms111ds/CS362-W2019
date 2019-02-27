@@ -10,6 +10,10 @@
 #include "dominion_helpers.h"
 #include <string.h>
 #include <time.h>
+#include <unistd.h>
+#include <signal.h>
+
+unsigned int alarmTime = 5; // max time in seconds before timeout
 
 
 /*************************************************************
@@ -31,11 +35,11 @@ int minPlayedCardCount = 0;         // min playedCardCount
 
 /****************************************************************
  * randomizeAndInsert
- * Description: randomize the game state and add smithy to the
- * current player's hand. Returns the position of smithy in the
- * hand.
+ * Description: randomize the game state and add adventurer to the
+ * current player's hand. Returns the position of adventurer in the
+ * hand. Also obtains the number of treasure cards inserted.
  ***************************************************************/
-int randomizeAndInsert(struct gameState * state)
+int randomizeAndInsert(struct gameState * state, int * treasureCount)
 {
     int i;
     int numTreasure;
@@ -49,6 +53,7 @@ int randomizeAndInsert(struct gameState * state)
     int discardWeight;
     int totalWeight;
     int totalCards;
+    int curCard;
 
     // randomize game state
     for (i = 0; i < sizeof(struct gameState); i++)
@@ -88,12 +93,28 @@ int randomizeAndInsert(struct gameState * state)
         }
     }
 
+
     // insert card into the player's hand and return the card's
     // position in the hand
     if (state->handCount[state->whoseTurn] == 0)
         state->handCount[state->whoseTurn] = 1;
     handPos = rand() % state->handCount[state->whoseTurn];
     state->hand[state->whoseTurn][handPos] = card;
+
+    // obtain the number of treasures
+    *treasureCount = 0;
+    for (i = 0; i < state->handCount[state->whoseTurn]; i++)
+    {
+        curCard = state->hand[state->whoseTurn][i];
+        if (curCard == copper || curCard == silver || curCard == gold)
+            (*treasureCount)++;
+    }
+    for (i = 0; i < state->discardCount[state->whoseTurn]; i++)
+    {
+        curCard = state->discard[state->whoseTurn][i];
+        if (curCard == copper || curCard == silver || curCard == gold)
+            (*treasureCount)++;
+    }
 
     return handPos;
 }        
@@ -202,7 +223,7 @@ void createExpectedState(struct gameState * expectedState, struct gameState * po
               expectedState->deckCount[curPlayer] = postState->deckCount[curPlayer]; 
               expectedState->discardCount[curPlayer] = postState->discardCount[curPlayer];
               // get hand size 
-              handSize = min(postState->handCount[curPlayer], expectedState->handCount[curPlayer] + 2);
+              handSize = min(postState->handCount[curPlayer], expectedState->handCount[curPlayer] + (2 - treasureFound));
               handSize = min(handSize, maxHandCount);
               // update hand with treasure cards 
               while (expectedState->handCount[curPlayer] < handSize)
@@ -270,7 +291,7 @@ void statePrint(struct gameState * state, char * stateName)
  * are found or return -1 and print error message on first error
  * found.
  ***************************************************************/
-int stateOracle(struct gameState * originalState, struct gameState * expectedState, struct gameState * postState)
+int stateOracle(struct gameState * originalState, struct gameState * expectedState, struct gameState * postState, int treasureCount)
 {
     int i;    
     int retVal;
@@ -282,6 +303,7 @@ int stateOracle(struct gameState * originalState, struct gameState * expectedSta
     {
         // if the states are different, print the critical variables
         printf("------------------------------------------------------\n");
+        printf("treasures in deck and discard: %i\n", treasureCount);
         statePrint(originalState, "original");
         statePrint(postState, "post");
         statePrint(expectedState, "expected");
@@ -323,25 +345,38 @@ int stateOracle(struct gameState * originalState, struct gameState * expectedSta
 
 }
 
+// /****************************************************************
+//  * alarmCatch 
+//  * Description: catches sigalrm.
+//  ***************************************************************/
+// void alarmCatch(int sig)
+// {
+//     printf("adventurer timed out\n");
+//     exit(0);
+// }
+
 int main(int argc, char * argv[])
 {
     int i;
     int iterations;
     int cardPos;
+    int treasureCount = 0;
     int bonus = 0;
     int bugsFound = 0;
     struct gameState originalState;
     struct gameState expectedState;
     struct gameState postState;
 
-    iterations = atoi(argv[1]);
 
+    iterations = atoi(argv[1]);
     srand(time(0));
+//     signal(SIGALRM, alarmCatch);
+//     alarm(alarmTime);
 
     for (i = 0; i < iterations; i++)
     {
         // printf("%i: ", i);
-        cardPos = randomizeAndInsert(&originalState);
+        cardPos = randomizeAndInsert(&originalState, &treasureCount);
         // printf("cardPos complete, ");
         memcpy(&expectedState, &originalState, sizeof(struct gameState));
         memcpy(&postState, &originalState, sizeof(struct gameState)); 
@@ -350,14 +385,14 @@ int main(int argc, char * argv[])
         // printf("adventurer run, ");
         createExpectedState(&expectedState, &postState);
         // printf("expected state obtained, ");
-        bugsFound += stateOracle(&originalState, &expectedState, &postState);
+        bugsFound += stateOracle(&originalState, &expectedState, &postState, treasureCount);
         // printf("oracle run\n");
     }
 
     if (bugsFound == 0)
-        printf("Smithy Test: No Bugs Found!\n");
+        printf("Adventurer Test: No Bugs Found!\n");
     else
-        printf("Smithy Test: %i Bugs Found :(\n", bugsFound);
+        printf("Adventurer Test: %i Bugs Found :(\n", bugsFound);
 
     return 0;
 }

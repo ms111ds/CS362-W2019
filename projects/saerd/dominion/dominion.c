@@ -1254,29 +1254,34 @@ int playAdventurer(struct gameState * state)
     int drawntreasure=0;
     int cardDrawn;
     int z = 0;// this is the counter for the temp hand
+    int j = 0;
+    int maxCards;
 
-        while(drawntreasure<2)
-        {
-            if (state->deckCount[currentPlayer] <1) //if the deck is empty we need to shuffle discard and add to deck
-                shuffle(currentPlayer, state);
-            drawCard(currentPlayer, state);
-            cardDrawn = state->hand[currentPlayer][state->handCount[currentPlayer]-1];//top card of hand is most recently drawn card.
-            if (cardDrawn == copper || cardDrawn == silver || cardDrawn == gold)
-                drawntreasure++;
-            else
-            {
-                temphand[z]=cardDrawn;
-                state->handCount[currentPlayer]--; //this should just remove the top card (the most recently drawn one).
-                z++;
-            }
-        }
 
-        while(z-1>=0)
+    maxCards = state->handCount[currentPlayer] + state->discardCount[currentPlayer];  
+    while(drawntreasure<2 && j < maxCards)
+    {
+        if (state->deckCount[currentPlayer] <1) //if the deck is empty we need to shuffle discard and add to deck
+            shuffle(currentPlayer, state);
+        drawCard(currentPlayer, state);
+        cardDrawn = state->hand[currentPlayer][state->handCount[currentPlayer]-1];//top card of hand is most recently drawn card.
+        if (cardDrawn == copper || cardDrawn == silver || cardDrawn == gold)
+            drawntreasure++;
+        else
         {
-            state->discard[currentPlayer][state->discardCount[currentPlayer]++]=temphand[z-1]; // discard all cards in play that have been drawn
-            z=z-1;
+            temphand[z]=cardDrawn;
+            state->handCount[currentPlayer]--; //this should just remove the top card (the most recently drawn one).
+            z++;
         }
-        return 0;
+        j++;
+    }
+
+    while(z-1>=0)
+    {
+        state->discard[currentPlayer][state->discardCount[currentPlayer]++]=temphand[z-1]; // discard all cards in play that have been drawn
+        z=z-1;
+    }
+    return 0;
 }
 
 

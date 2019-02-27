@@ -39,7 +39,11 @@ randomTest1: dominion.o rngs.o randomtestcard1.c
 randomTest2: dominion.o rngs.o randomtestcard2.c
 	gcc -o randomTest2 dominion.o rngs.o randomtestcard2.c -g $(CFLAGS)
 
-randomTestsAll: randomTest1 randomTest2
+randomTest3: dominion.o rngs.o randomtestcard3.c
+	gcc -o randomTest3 dominion.o rngs.o randomtestcard3.c -g $(CFLAGS)
+
+
+randomTestsAll: randomTest1 randomTest2 randomTest3
 	echo "---------- test results ----------" > randomtestcard1.out
 	./randomTest1 10 >> randomtestcard1.out 2>&1
 	echo >> randomtestcard1.out
@@ -49,12 +53,20 @@ randomTestsAll: randomTest1 randomTest2
 	cat dominion.c.gcov >> randomtestcard1.out
 	
 	echo "---------- test results ----------" > randomtestcard2.out
-	./randomTest2 10 >> randomtestcard2.out 2>&1
+	./randomTest2 20 >> randomtestcard2.out 2>&1
 	echo >> randomtestcard2.out
 	echo "---------- gcov results ----------" >> randomtestcard2.out
 	gcov dominion.c -b >> randomtestcard2.out
 	echo >> randomtestcard2.out
 	cat dominion.c.gcov >> randomtestcard2.out
+	
+	echo "---------- test results ----------" > randomtestcard2.out
+	./randomTest3 5 >> randomtestcard3.out 2>&1
+	echo >> randomtestcard3.out
+	echo "---------- gcov results ----------" >> randomtestcard3.out
+	gcov dominion.c -b >> randomtestcard3.out
+	echo >> randomtestcard3.out
+	cat dominion.c.gcov >> randomtestcard3.out
 
 all: playdom player 
 
