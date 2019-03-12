@@ -18,4 +18,6 @@ int adventurerCard(int currentPlayer, int handPos, struct gameState *state);
 int villageCard(int currentPlayer, int handPos, struct gameState *state);
 int greatHallCard(int currentPlayer, int handPos, struct gameState *state);
 int baronCard(int currentPlayer, int handPos, struct gameState *state, int choice1);
+
+
 #endif
