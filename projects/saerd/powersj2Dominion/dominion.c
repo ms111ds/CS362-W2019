@@ -1271,7 +1271,7 @@ int adventurerCard(int currentPlayer, int handPos, struct gameState *state){
 	int drawntreasure=0;
 	int temphand[MAX_HAND];// moved above the if statement
 	int z = 0;// this is the counter for the temp hand
-	while(drawntreasure<2 && (state->deckCount[currentPlayer] > 0 || state->discardCount[currentPlayer] > 0))
+	while(drawntreasure<2 && (state->deckCount[currentPlayer] > 0 || state->discardCount[currentPlayer] > 0) && state->handCount[currentPlayer] < MAX_HAND)
     {
 		if (state->deckCount[currentPlayer] < 1)
         {//if the deck is empty we need to shuffle discard and add to deck
