@@ -238,6 +238,10 @@ void createExpectedState(struct gameState * expectedState, struct gameState * po
                       postState->hand[curPlayer][expectedState->handCount[curPlayer]];
                   expectedState->handCount[curPlayer]++;
               }
+              // handSize as a card is drawn and then removed from hand if it is not a treasure, this next statement captures this "print") 
+              if (expectedState->handCount[curPlayer] <= maxHandCount)
+                  expectedState->hand[curPlayer][expectedState->handCount[curPlayer]] = postState->hand[curPlayer][expectedState->handCount[curPlayer]];
+
               // set the deck Switch
               deckSwitch = 1;
           }
