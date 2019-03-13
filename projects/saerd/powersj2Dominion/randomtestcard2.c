@@ -283,6 +283,7 @@ void statePrint(struct gameState * state, char * stateName)
     printf("deckCount: %i\n", state->deckCount[whoseTurn]);
     printf("discardCount: %i\n", state->discardCount[whoseTurn]);
     printf("playedCardCount: %i\n", state->playedCardCount);
+    fflush(stdout);
 }
 
 /****************************************************************
@@ -377,6 +378,8 @@ int main(int argc, char * argv[])
     {
         // printf("%i: ", i);
         cardPos = randomizeAndInsert(&originalState, &treasureCount);
+        //printf("treasure count: %i\n", treasureCount);
+        //statePrint(&originalState, "original-prePrint");
         // printf("cardPos complete, ");
         memcpy(&expectedState, &originalState, sizeof(struct gameState));
         memcpy(&postState, &originalState, sizeof(struct gameState)); 

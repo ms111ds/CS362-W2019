@@ -151,6 +151,7 @@ int main()
             state->deckCount[0] = 1;
             state->discardCount[0] = 4;
         }
+        j++;
     }
 
     //all tests passed or some failed

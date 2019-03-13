@@ -43,6 +43,8 @@ int main()
     int     originalHandSize = 5;
     int     originalDeckSize = 5;
     int     curPlayer;
+    int     origVal;
+    int     fxnVal;
 
     // initialize game
     state = newGame();
@@ -182,10 +184,12 @@ int main()
         // ensure correct cards in discard pile 
         if (curPlayer != 0 && curPlayer != 2)
         { 
-            if (originalState->deck[curPlayer][4] != state->discard[curPlayer][0])
+            origVal = originalState->deck[curPlayer][originalState->deckCount[curPlayer] - 1];
+            fxnVal = state->discard[curPlayer][state->discardCount[curPlayer] - 1];
+            if (origVal != fxnVal)
             {
                 errMsg("sea_hag produced incorrect card in discard pile.", curFile, &numErr);
-                printf("\tplayer %i: should be %i, produced %i.\n", curPlayer + 1, originalState->deck[curPlayer][4], state->discard[curPlayer][0]);
+                printf("\tplayer %i: should be %i, produced %i.\n", curPlayer + 1, origVal, fxnVal);
             }
         }
         
